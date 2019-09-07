@@ -1,6 +1,5 @@
 extern crate futures;
 extern crate failure;
-extern crate exitfailure;
 extern crate tokio;
 extern crate serde;
 #[macro_use]
@@ -12,14 +11,15 @@ extern crate env_logger;
 
 
 use std::net::SocketAddrV4;
+use std::error::Error;
 
 use clap::{AppSettings, App, Arg, SubCommand};
 use config::{File, Environment, Config, ConfigError};
-use exitfailure::ExitFailure;
+use tokio::prelude::*;
+use tokio::net::TcpListener;
 
 
 mod taxonomy;
-
 
 const VERSION: &str = "v0.1.0-alpha";
 const ASCIIART: &str = r#"
@@ -33,9 +33,8 @@ const ASCIIART: &str = r#"
 |/    )_)(____/   (_______)|/   \__/(______/
 "#;
 
-
 #[tokio::main]
-async fn main() -> Result<(), Box<ExitFailure>> {
+async fn main() -> Result<(), Box<dyn Error>> {
     let matches = App::new("njord")
         .setting(AppSettings::SubcommandRequiredElseHelp)
         .version(VERSION)
@@ -51,7 +50,7 @@ async fn main() -> Result<(), Box<ExitFailure>> {
                     .arg(Arg::with_name("config")
                          .short("c")
                          .long("configuration")
-                         .value_name("JSON, TOML, YAML, HJSON, INI - configuration")
+                         .value_name("JSON, TOM, YAM, HJSON, INI - configuration")
                          .takes_value(true)
                          .help("path to config file")
                          .required(true)))
@@ -75,19 +74,32 @@ async fn main() -> Result<(), Box<ExitFailure>> {
         .filter(Some(module_path!()), log_level)
         .init();
     debug!("Loaded configuration: {:?}", config);
-    
-    Ok(())
+
+    let addr = config.bind_address.to_string();
+    debug!("{:?}", addr);
+    let mut listener = TcpListener::bind(&addr).await?;
+
+    loop {
+        let (mut socket, _) = listener.accept().await?;
+        tokio::spawn(async move {
+            debug!("got to async");
+        });
+    }
 }
 
 #[derive(Deserialize, Debug)]
 struct Configuration {
-    bind_address:  SocketAddrV4
+    bind_address: SocketAddrV4,
+    peers: Vec<SocketAddrV4>
 }
 
 impl Default for Configuration {
     fn default() -> Self {
+        let sample_peer = "127.0.0.1:6505".parse::<SocketAddrV4>().unwrap();
+        
         Self{
-            bind_address: "127.0.0.1:6504".parse::<SocketAddrV4>().unwrap()
+            bind_address: "127.0.0.1:6504".parse::<SocketAddrV4>().unwrap(),
+            peers: vec![sample_peer]
         }
     }
 }
