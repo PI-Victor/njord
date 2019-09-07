@@ -3,3 +3,4 @@ shep
 **/*.rs.bk
 .shep.yaml
 postgres.yaml
+*.#*

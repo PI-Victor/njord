@@ -1,5 +1,6 @@
 extern crate futures;
 extern crate failure;
+extern crate exitfailure;
 extern crate tokio;
 extern crate serde;
 #[macro_use]
@@ -9,13 +10,16 @@ extern crate clap;
 extern crate log;
 extern crate env_logger;
 
+
 use std::net::SocketAddrV4;
 
-use std::error::Error;
 use clap::{AppSettings, App, Arg, SubCommand};
 use config::{File, Environment, Config, ConfigError};
+use exitfailure::ExitFailure;
+
 
 mod taxonomy;
+
 
 const VERSION: &str = "v0.1.0-alpha";
 const ASCIIART: &str = r#"
@@ -31,7 +35,7 @@ const ASCIIART: &str = r#"
 
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
+async fn main() -> Result<(), Box<ExitFailure>> {
     let matches = App::new("njord")
         .setting(AppSettings::SubcommandRequiredElseHelp)
         .version(VERSION)
@@ -60,7 +64,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         config = Configuration::new(matches.value_of("config").unwrap())
             .unwrap();
     }
-    let log_level = match matches.occurrences_of("v") {
+    let log_level = match matches.occurrences_of("verbosity") {
         0 => log::LevelFilter::Error,
         1 => log::LevelFilter::Warn,
         2 => log::LevelFilter::Info,
@@ -70,9 +74,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
     env_logger::Builder::from_default_env()
         .filter(Some(module_path!()), log_level)
         .init();
-
     debug!("Loaded configuration: {:?}", config);
-
+    
     Ok(())
 }
 
@@ -93,7 +96,7 @@ impl Configuration {
     pub fn new(path: &str) -> Result<Self, ConfigError> {
         let mut c = Config::new();
         c.merge(File::with_name(path))?;
-        c.merge(Environment::with_prefix("SHEP_CONFIG"))?;
+        c.merge(Environment::with_prefix("NJORD_CONFIG"))?;
         c.try_into()
     }
 }
