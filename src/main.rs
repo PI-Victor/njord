@@ -12,6 +12,7 @@ extern crate env_logger;
 
 use std::net::SocketAddrV4;
 use std::error::Error;
+use std::str;
 
 use clap::{AppSettings, App, Arg, SubCommand};
 use config::{File, Environment, Config, ConfigError};
@@ -76,13 +77,28 @@ async fn main() -> Result<(), Box<dyn Error>> {
     debug!("Loaded configuration: {:?}", config);
 
     let addr = config.bind_address.to_string();
-    debug!("{:?}", addr);
     let mut listener = TcpListener::bind(&addr).await?;
 
     loop {
         let (mut socket, _) = listener.accept().await?;
         tokio::spawn(async move {
-            debug!("got to async");
+            loop {
+                let mut buff = [0; 1024];
+                match socket.read(&mut buff).await {
+                    Ok(n) if n == 0 => {
+                        info!("empty buffer received, ignoring...");
+                        return;
+                    },
+                    Ok(n) => {
+                        let rec = str::from_utf8(&buff).unwrap();
+                        info!("wrote: {} buffer size: {}", rec, n);
+                    },
+                    Err(e) => {
+                        error!("failed to write to socket: {:?}", e);
+                        return;
+                    }
+                };
+            }
         });
     }
 }
@@ -90,16 +106,18 @@ async fn main() -> Result<(), Box<dyn Error>> {
 #[derive(Deserialize, Debug)]
 struct Configuration {
     bind_address: SocketAddrV4,
-    peers: Vec<SocketAddrV4>
+    peers: Vec<SocketAddrV4>,
+    partitions: u8,
 }
 
 impl Default for Configuration {
     fn default() -> Self {
         let sample_peer = "127.0.0.1:6505".parse::<SocketAddrV4>().unwrap();
-        
+
         Self{
             bind_address: "127.0.0.1:6504".parse::<SocketAddrV4>().unwrap(),
-            peers: vec![sample_peer]
+            peers: vec![sample_peer],
+            partitions: 4,
         }
     }
 }
