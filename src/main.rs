@@ -19,8 +19,8 @@ use config::{File, Environment, Config, ConfigError};
 use tokio::prelude::*;
 use tokio::net::TcpListener;
 
+mod discovery;
 
-mod taxonomy;
 
 const VERSION: &str = "v0.1.0-alpha";
 const ASCIIART: &str = r#"
