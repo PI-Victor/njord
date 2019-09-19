@@ -10,7 +10,7 @@ extern crate log;
 extern crate env_logger;
 
 
-use std::net::SocketAddrV4;
+use std::net::{SocketAddrV4, Ipv4Addr};
 use std::error::Error;
 use std::str;
 
@@ -20,6 +20,8 @@ use tokio::prelude::*;
 use tokio::net::TcpListener;
 
 mod discovery;
+
+use discovery::nodes::Node;
 
 
 const VERSION: &str = "v0.1.0-alpha";
@@ -41,6 +43,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .version(VERSION)
         .about(ASCIIART)
         .author("Cloudflavor Org")
+        .arg(Arg::with_name("master")
+             .help("set node up as master"))
         .arg(Arg::with_name("verbosity")
              .multiple(true)
              .short("v")
@@ -50,7 +54,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                     .help("start the application")
                     .arg(Arg::with_name("config")
                          .short("c")
-                         .long("configuration")
+                         .long("config")
                          .value_name("JSON, TOM, YAM, HJSON, INI - configuration")
                          .takes_value(true)
                          .help("path to config file")
@@ -71,14 +75,35 @@ async fn main() -> Result<(), Box<dyn Error>> {
         3 => log::LevelFilter::Debug,
         _ => log::LevelFilter::Trace,
     };
+
     env_logger::Builder::from_default_env()
         .filter(Some(module_path!()), log_level)
         .init();
     debug!("Loaded configuration: {:?}", config);
+    let client_sock_addr = format!("{:}:6505", &config.bind_address)
+        .parse::<SocketAddrV4>()
+        .unwrap();
+    let node_sock_addr = format!("{:}:6404", &config.bind_address)
+        .parse::<SocketAddrV4>()
+        .unwrap();
 
-    let addr = config.bind_address.to_string();
-    let mut listener = TcpListener::bind(&addr).await?;
+    debug!("Initializing node...");
+    // The node will not initialize until it gets more nodes available to be
+    // able to meet decorum.
+    let mut node = Node::default();
+    tokio::spawn(async move {
+        node.init(&config)
+            .map(|e| {
+                debug!("Initializing node, waiting for peers...");
+                let mut looper = true;
+                while looper {
 
+                }
+            }).await;
+    });
+
+    let mut listener = TcpListener::bind(client_sock_addr.to_string()).await?;
+    debug!("Listening for connections...");
     loop {
         let (mut socket, _) = listener.accept().await?;
         tokio::spawn(async move {
@@ -104,10 +129,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
 }
 
 #[derive(Deserialize, Debug)]
-struct Configuration {
-    bind_address: SocketAddrV4,
+pub struct Configuration {
+    bind_address: Ipv4Addr,
     peers: Vec<SocketAddrV4>,
     partitions: u8,
+    log_path: String
 }
 
 impl Default for Configuration {
@@ -115,9 +141,10 @@ impl Default for Configuration {
         let sample_peer = "127.0.0.1:6505".parse::<SocketAddrV4>().unwrap();
 
         Self{
-            bind_address: "127.0.0.1:6504".parse::<SocketAddrV4>().unwrap(),
+            bind_address: "127.0.0.1".parse::<Ipv4Addr>().unwrap(),
             peers: vec![sample_peer],
             partitions: 4,
+            log_path: "/tmp/log/".to_string()
         }
     }
 }
