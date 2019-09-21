@@ -22,6 +22,7 @@ use tokio::net::TcpListener;
 mod discovery;
 
 use discovery::nodes::Node;
+use discovery::discover::Registry;
 
 
 const VERSION: &str = "v0.1.0-alpha";
@@ -84,23 +85,28 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .parse::<SocketAddrV4>()
         .unwrap();
     let node_sock_addr = format!("{:}:6404", &config.bind_address)
+
         .parse::<SocketAddrV4>()
         .unwrap();
 
-    debug!("Initializing node...");
-    // The node will not initialize until it gets more nodes available to be
-    // able to meet decorum.
+    // The node will not initialize until at least 2 other nodes are available,
+    // this will ensure cvorum for data validation.
     let mut node = Node::default();
-    tokio::spawn(async move {
-        node.init(&config)
-            .map(|e| {
-                debug!("Initializing node, waiting for peers...");
-                let mut looper = true;
-                while looper {
+    node.init(&config)
+        .map(|e| {
+            debug!("Initializing node, waiting for peers...");
+            let mut registry = Registry::default();
+            let mut node = Node::default();
 
-                }
-            }).await;
-    });
+            match e {
+                Ok(e) => node = e,
+                Err(e) => info!("nope: {:?}", e)
+            }
+
+            while registry.pending_cvorum {
+                registry.register(&node);
+            }
+        }).await;
 
     let mut listener = TcpListener::bind(client_sock_addr.to_string()).await?;
     debug!("Listening for connections...");
