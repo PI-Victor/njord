@@ -1,6 +1,4 @@
 extern crate futures;
-extern crate failure;
-extern crate tokio;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
@@ -9,21 +7,18 @@ extern crate clap;
 extern crate log;
 extern crate env_logger;
 
-
-use std::net::{SocketAddrV4, Ipv4Addr};
-use std::error::Error;
+use std::net::{Ipv4Addr, SocketAddrV4};
 use std::str;
 
-use clap::{AppSettings, App, Arg, SubCommand};
-use config::{File, Environment, Config, ConfigError};
-use tokio::prelude::*;
-use tokio::net::TcpListener;
+use clap::{App, AppSettings, Arg, SubCommand};
+use config::{Config, ConfigError, Environment, File};
+use futures::prelude::*;
+use runtime::net::TcpListener;
 
 mod discovery;
 
-use discovery::nodes::Node;
 use discovery::discover::Registry;
-
+use discovery::nodes::Node;
 
 const VERSION: &str = "v0.1.0-alpha";
 const ASCIIART: &str = r#"
@@ -37,37 +32,41 @@ const ASCIIART: &str = r#"
 |/    )_)(____/   (_______)|/   \__/(______/
 "#;
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
+#[runtime::main]
+async fn main() -> Result<(), std::io::Error> {
     let matches = App::new("njord")
         .setting(AppSettings::SubcommandRequiredElseHelp)
         .version(VERSION)
         .about(ASCIIART)
         .author("Cloudflavor Org")
-        .arg(Arg::with_name("master")
-             .help("set node up as master"))
-        .arg(Arg::with_name("verbosity")
-             .multiple(true)
-             .short("v")
-             .help("application verbosity level 0-4")
-             .long("verbosity"))
-        .subcommand(SubCommand::with_name("start")
-                    .help("start the application")
-                    .arg(Arg::with_name("config")
-                         .short("c")
-                         .long("config")
-                         .value_name("JSON, TOM, YAM, HJSON, INI - configuration")
-                         .takes_value(true)
-                         .help("path to config file")
-                         .required(true)))
+        .arg(Arg::with_name("master").help("set node up as master"))
+        .arg(
+            Arg::with_name("verbosity")
+                .multiple(true)
+                .short("v")
+                .help("application verbosity level 0-4")
+                .long("verbosity"),
+        )
+        .subcommand(
+            SubCommand::with_name("start")
+                .help("start the application")
+                .arg(
+                    Arg::with_name("config")
+                        .short("c")
+                        .long("config")
+                        .value_name("JSON, TOM, YAM, HJSON, INI - configuration")
+                        .takes_value(true)
+                        .help("path to config file")
+                        .required(true),
+                ),
+        )
         .get_matches();
 
     let mut config = Configuration::default();
     // NOTE: should this have more than start?
     // if not, then start should be removed completely.
     if let Some(matches) = matches.subcommand_matches("start") {
-        config = Configuration::new(matches.value_of("config").unwrap())
-            .unwrap();
+        config = Configuration::new(matches.value_of("config").unwrap()).unwrap();
     }
     let log_level = match matches.occurrences_of("verbosity") {
         0 => log::LevelFilter::Error,
@@ -81,57 +80,43 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .filter(Some(module_path!()), log_level)
         .init();
     debug!("Loaded configuration: {:?}", config);
-    let client_sock_addr = format!("{:}:6505", &config.bind_address)
+    let client_sock_addr = format!("{:}:8718", &config.bind_address)
         .parse::<SocketAddrV4>()
         .unwrap();
-    let node_sock_addr = format!("{:}:6404", &config.bind_address)
-
+    let node_sock_addr = format!("{:}:8717", &config.bind_address)
         .parse::<SocketAddrV4>()
         .unwrap();
+    debug!("Initializing node, waiting for peers...");
 
-    // The node will not initialize until at least 2 other nodes are available,
-    // this will ensure cvorum for data validation.
+    let mut registry = Registry::default();
     let mut node = Node::default();
-    node.init(&config)
-        .map(|e| {
-            debug!("Initializing node, waiting for peers...");
-            let mut registry = Registry::default();
-            let mut node = Node::default();
+    node.init(&config).await?;
+    registry.register(node);
 
-            match e {
-                Ok(e) => node = e,
-                Err(e) => info!("nope: {:?}", e)
+    let mut node_listener = TcpListener::bind(&node_sock_addr.to_string())?;
+    debug!("Listening for node on: {:?}", node_listener);
+    node_listener
+        .incoming()
+        .try_for_each_concurrent(None, |mut client| {
+            async move {
+                runtime::spawn(async move {
+                    let mut buff = vec![0u8; 1024];
+                    client.read_to_end(&mut buff).await?;
+                    debug!("wrote some stuff: {:?}", std::str::from_utf8(&buff));
+                    Ok::<(), std::io::Error>(())
+                })
+                .await
             }
-
-            while registry.pending_cvorum {
-                registry.register(&node);
-            }
-        }).await;
-
-    let mut listener = TcpListener::bind(client_sock_addr.to_string()).await?;
-    debug!("Listening for connections...");
-    loop {
-        let (mut socket, _) = listener.accept().await?;
-        tokio::spawn(async move {
-            loop {
-                let mut buff = [0; 1024];
-                match socket.read(&mut buff).await {
-                    Ok(n) if n == 0 => {
-                        info!("empty buffer received, ignoring...");
-                        return;
-                    },
-                    Ok(n) => {
-                        let rec = str::from_utf8(&buff).unwrap();
-                        info!("wrote: {} buffer size: {}", rec, n);
-                    },
-                    Err(e) => {
-                        error!("failed to write to socket: {:?}", e);
-                        return;
-                    }
-                };
-            }
-        });
-    }
+        })
+        .await?;
+    let mut client_listener = TcpListener::bind(&client_sock_addr.to_string())?;
+    client_listener
+        .incoming()
+        .try_for_each_concurrent(None, |mut client| {
+            async move { runtime::spawn(async move { Ok::<(), std::io::Error>(()) }).await }
+        })
+        .await?;
+    Ok(())
 }
 
 #[derive(Deserialize, Debug)]
@@ -139,18 +124,18 @@ pub struct Configuration {
     bind_address: Ipv4Addr,
     peers: Vec<SocketAddrV4>,
     partitions: u8,
-    log_path: String
+    log_path: String,
 }
 
 impl Default for Configuration {
     fn default() -> Self {
         let sample_peer = "127.0.0.1:6505".parse::<SocketAddrV4>().unwrap();
 
-        Self{
+        Self {
             bind_address: "127.0.0.1".parse::<Ipv4Addr>().unwrap(),
             peers: vec![sample_peer],
             partitions: 4,
-            log_path: "/tmp/log/".to_string()
+            log_path: "/tmp/log/".to_string(),
         }
     }
 }
