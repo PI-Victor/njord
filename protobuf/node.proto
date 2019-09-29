@@ -1,0 +1,5 @@
+syntax = "proto2";
+
+message Node {
+  required string id = 1;
+}
