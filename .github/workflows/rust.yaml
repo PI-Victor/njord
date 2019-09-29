@@ -11,7 +11,7 @@ jobs:
 
     - uses: hecrj/setup-rust-action@v1
       with:
-        rust_version: nightly
+        rust-version: nightly
 
     - uses: actions/checkout@master
 
