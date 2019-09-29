@@ -1,54 +1,84 @@
 use super::nodes::Node;
 
+/// The `registry` contains all the functional nodes to which the leader will
+/// broadcast messages to.
+///
+/// It will ensure that the nodes are all valid by reporting Status::Running.
+/// Nodes that do not fulfill the `Running` state will be remove from the
+/// registry.
+///
+/// In order for data to be validated properly, the registry seeks to fulfill a
+/// semi-cvorum or a minimum of 3 nodes. This type of cvorum is made for testing
+/// purposes and does not ensure proper data validation.
+///
+/// The recommended cvorum is formed out of at least 5 nodes (4 nodes and a
+/// leader).
+
 #[derive(Debug)]
-pub struct Registry<'a> {
+pub struct Registry {
     // peers is of the Option type for init convenience here.
-    pub peers: Vec<Option<&'a Node>>,
-    pub pending_cvorum: bool
+    pub peers: Vec<Option<Node>>,
+    pub cvorum: bool,
 }
 
-impl<'a> Registry<'a> {
-    pub fn register(&mut self, node: &'a Node) {
-        let find = self.peers.iter()
-            .find(|&n| {
-                match Some(n) {
-                    Some(e) => *e == Some(node),
-                    None => false
-                }
-            });
+impl Registry {
+    /// Register handles the registration of a node.
+    /// The nodes is checked against the current list of nodes that the registry
+    /// has.
+    /// The node needs to be in a `Running` state to be added successfully.
+    pub async fn register(&mut self, node: Node) {
+        // NOTE: this is, pretty much garbage.
+        let found = self.peers.iter().find(|&n| match n {
+            Some(no) => {
+                let x = &node == no;
+                debug!("i found a node: {:?}", x);
+                true
+            }
+            None => false,
+        });
 
-        match find {
-            Some(_) => info!("node already present"),
+        match found {
+            Some(_) => debug!("Node already present. Skipping..."),
             None => {
-                debug!("Adding node: {:?}", node);
-                self.peers.push(Some(node))
+                self.peers.push(Some(node));
+                debug!("{:?}", self);
             }
         }
+        self.check_cvorum().await;
+        debug!("No of peers: {:?}", self.peers);
     }
-
-    async fn diregister(&mut self, index: usize) {
+    /// Unregister will remove a node from the registry.
+    async fn unregister(&mut self, index: usize) {
         self.peers.remove(index);
+        self.check_cvorum().await;
     }
-
-    pub async fn pool(&mut self) -> usize {
-        self.pending_cvorum = true;
-        8
-    }
-    async fn check_cvorum(&self) -> bool {
-        let size = self.peers.len();
-        if size >= 3 {
-            return true
+    /// This function will do a simple check against the node registry to see if
+    /// there are enough nodes to meet cvorum.
+    ///
+    /// #### Raft
+    /// Not fully implemented at this time so the check is quite simple:
+    ///
+    /// A minimum of three nodes is required for a validation, this is mostly
+    /// for development purposes.
+    /// For more serious use cases a minimum of 5 nodes should be considered.
+    async fn check_cvorum(&mut self) {
+        if self.peers.len() >= 3 {
+            self.cvorum = true;
+            return;
         }
-        false
+        self.cvorum = false;
+        debug!("cvorum not met!");
     }
 }
 
-impl Default for Registry<'_> {
+impl Default for Registry {
+    /// Default is a convenience function for creating a new registry instance.
+    /// The default value for `peers` is None, this needs to be checked in the
     fn default() -> Self {
         let peers = vec![None];
         Self {
             peers: peers,
-            pending_cvorum: true
+            cvorum: false,
         }
     }
 }

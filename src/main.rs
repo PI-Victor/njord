@@ -14,11 +14,12 @@ use clap::{App, AppSettings, Arg, SubCommand};
 use config::{Config, ConfigError, Environment, File};
 use futures::prelude::*;
 use runtime::net::TcpListener;
+use runtime::net::TcpStream;
 
 mod discovery;
 
 use discovery::discover::Registry;
-use discovery::nodes::Node;
+use discovery::nodes::{Node, LOG_PATH};
 
 const VERSION: &str = "v0.1.0-alpha";
 const ASCIIART: &str = r#"
@@ -86,30 +87,58 @@ async fn main() -> Result<(), std::io::Error> {
     let node_sock_addr = format!("{:}:8717", &config.bind_address)
         .parse::<SocketAddrV4>()
         .unwrap();
-    debug!("Initializing node, waiting for peers...");
+    info!("Initializing node, waiting for peers...");
 
     let mut registry = Registry::default();
     let mut node = Node::default();
     node.init(&config).await?;
-    registry.register(node);
+    registry.register(node).await;
 
-    let mut node_listener = TcpListener::bind(&node_sock_addr.to_string())?;
-    debug!("Listening for node on: {:?}", node_listener);
-    node_listener
-        .incoming()
-        .try_for_each_concurrent(None, |mut client| {
-            async move {
-                runtime::spawn(async move {
-                    let mut buff = vec![0u8; 1024];
-                    client.read_to_end(&mut buff).await?;
-                    debug!("wrote some stuff: {:?}", std::str::from_utf8(&buff));
-                    Ok::<(), std::io::Error>(())
-                })
-                .await
+    runtime::spawn(async move {
+        let mut node_listener = TcpListener::bind(&node_sock_addr.to_string()).unwrap();
+        info!("Listening for nodes on: {:?}", node_listener);
+        node_listener
+            .incoming()
+            .try_for_each_concurrent(None, |mut client| {
+                async move {
+                    // NOTE: Mutate (safely) the state of the registry by adding any
+                    // new nodes that send requests.
+                    runtime::spawn(async move {
+                        let mut buff = vec![0u8; 1024];
+                        client.read_to_end(&mut buff).await?;
+                        debug!(
+                            "received: {:} from {:}",
+                            std::str::from_utf8(&buff).unwrap(),
+                            &client.peer_addr().unwrap()
+                        );
+                        Ok::<(), std::io::Error>(())
+                    })
+                    .await
+                }
+            })
+            .await
+            .unwrap();
+    });
+    runtime::spawn(async move {
+        for node_addr in config.peers.iter() {
+            let node_client = TcpStream::connect(&node_addr.to_string()).await;
+            match node_client {
+                Ok(mut client) => {
+                    let msg = "A string";
+                    let res = client.write_all(msg.as_bytes()).await;
+                    match res {
+                        Ok(client) => debug!("this is the client: {:?}", client),
+                        Err(err) => debug!("we got an error: {:?}", err),
+                    }
+                }
+                Err(err) => debug!("Failed to connect to client: {:?}", err),
             }
-        })
-        .await?;
+        }
+    })
+    .await;
+
     let mut client_listener = TcpListener::bind(&client_sock_addr.to_string())?;
+    info!("Listening for  on: {:?}", client_listener);
     client_listener
         .incoming()
         .try_for_each_concurrent(None, |mut client| {
@@ -129,13 +158,13 @@ pub struct Configuration {
 
 impl Default for Configuration {
     fn default() -> Self {
-        let sample_peer = "127.0.0.1:6505".parse::<SocketAddrV4>().unwrap();
+        let sample_peer = "127.0.0.1:8717".parse::<SocketAddrV4>().unwrap();
 
         Self {
             bind_address: "127.0.0.1".parse::<Ipv4Addr>().unwrap(),
             peers: vec![sample_peer],
             partitions: 4,
-            log_path: "/tmp/log/".to_string(),
+            log_path: LOG_PATH.to_string(),
         }
     }
 }
