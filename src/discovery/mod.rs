@@ -1,2 +1,2 @@
-pub mod nodes;
 pub mod discover;
+pub mod nodes;

@@ -1,5 +1,5 @@
 shep
-/target
+*target
 **/*.rs.bk
 .shep.yaml
 postgres.yaml
