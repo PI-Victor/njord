@@ -19,7 +19,7 @@ use runtime::net::TcpStream;
 mod discovery;
 
 use discovery::discover::Registry;
-use discovery::nodes::{Node, LOG_PATH};
+use discovery::nodes::{Node, DEFAULT_NODE_NAME, LOG_PATH};
 
 const VERSION: &str = "v0.1.0-alpha";
 const ASCIIART: &str = r#"
@@ -89,10 +89,9 @@ async fn main() -> Result<(), std::io::Error> {
         .unwrap();
     info!("Initializing node, waiting for peers...");
 
-    let mut registry = Registry::default();
     let mut node = Node::default();
     node.init(&config).await?;
-    registry.register(node).await;
+    let mut registry = Registry::init(node).register(None).await;
 
     runtime::spawn(async move {
         let mut node_listener = TcpListener::bind(&node_sock_addr.to_string()).unwrap();
@@ -101,8 +100,8 @@ async fn main() -> Result<(), std::io::Error> {
             .incoming()
             .try_for_each_concurrent(None, |mut client| {
                 async move {
-                    // NOTE: Mutate (safely) the state of the registry by adding any
-                    // new nodes that send requests.
+                    // NOTE: Mutate (safely) the state of the registry by
+                    // registering new clients that send requests.
                     runtime::spawn(async move {
                         let mut buff = vec![0u8; 1024];
                         client.read_to_end(&mut buff).await?;
@@ -127,7 +126,7 @@ async fn main() -> Result<(), std::io::Error> {
                     let msg = "A string";
                     let res = client.write_all(msg.as_bytes()).await;
                     match res {
-                        Ok(client) => debug!("this is the client: {:?}", client),
+                        Ok(_) => debug!("this is the client: {:?}", client),
                         Err(err) => debug!("we got an error: {:?}", err),
                     }
                 }
@@ -152,8 +151,10 @@ async fn main() -> Result<(), std::io::Error> {
 pub struct Configuration {
     bind_address: Ipv4Addr,
     peers: Vec<SocketAddrV4>,
+    replicas: u8,
     partitions: u8,
     log_path: String,
+    node_name: String,
 }
 
 impl Default for Configuration {
@@ -164,7 +165,9 @@ impl Default for Configuration {
             bind_address: "127.0.0.1".parse::<Ipv4Addr>().unwrap(),
             peers: vec![sample_peer],
             partitions: 4,
+            replicas: 5,
             log_path: LOG_PATH.to_string(),
+            node_name: DEFAULT_NODE_NAME.to_string(),
         }
     }
 }

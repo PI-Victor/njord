@@ -5,8 +5,8 @@ use std::io::{Error, ErrorKind};
 
 use crate::Configuration;
 
-pub const LOG_PATH: &'static str = "/opt/njord/log";
-
+pub const LOG_PATH: &'static str = "opt/njord/log";
+pub const DEFAULT_NODE_NAME: &'static str = "initial";
 /// State represents the state of a node at any given time
 ///
 /// `Running` - The normal operational state of a machine. In this state the
@@ -37,9 +37,10 @@ pub enum State {
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub struct Node {
     ip: Ipv4Addr,
-    log_path: &'static str,
+    log_path: String,
     state: State,
     leader: bool,
+    name: String,
 }
 
 impl Node {
@@ -49,10 +50,11 @@ impl Node {
     pub async fn init(&mut self, conf: &Configuration) -> Result<Self, Error> {
         match create_dir_all(&conf.log_path) {
             Ok(_) => Ok(Self {
-                ip: conf.bind_address.clone(),
-                log_path: LOG_PATH,
+                ip: conf.bind_address,
+                log_path: conf.log_path.to_string(),
                 state: State::Pending,
                 leader: false,
+                name: conf.node_name.to_string(),
             }),
             Err(e) => Err(Error::new(ErrorKind::Other, e)),
         }
@@ -65,9 +67,10 @@ impl Default for Node {
     fn default() -> Self {
         Self {
             ip: "127.0.0.1".parse::<Ipv4Addr>().unwrap(),
-            log_path: LOG_PATH,
+            log_path: LOG_PATH.to_string(),
             state: State::Pending,
             leader: false,
+            name: DEFAULT_NODE_NAME.to_string(),
         }
     }
 }
