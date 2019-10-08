@@ -1,9 +1,11 @@
 ---
-bind_address: "10.0.0.51"
+node_name: node2
+bind_address: "0.0.0.0"
 peers:
   - 10.0.0.50:8717
   - 10.0.0.52:8717
   - 10.0.0.53:8717
   - 10.0.0.54:8717
 partitions: 4
+replicas: 4
 log_path: "/opt/njord/log/"
