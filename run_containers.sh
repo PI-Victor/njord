@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+cargo build 
+
 docker network rm njord || true
 docker network create --subnet 10.0.0.0/24 njord
 
