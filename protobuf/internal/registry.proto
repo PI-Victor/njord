@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package registry;
+
+service registry {};
+
+message Node {
+  string id = 1;
+  string address = 2;
+  bool leader= 3;
+  enum State {
+    Running = 0;
+    Pending = 1;
+    Failed = 2;
+  }
+  State state = 4;
+}
