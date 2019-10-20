@@ -19,7 +19,7 @@ pub const DEFAULT_NODE_NAME: &'static str = "initial";
 /// `Failed` - Failed is the state of the machine when the machine has problems
 /// running, writing messages, or validating messages. In this state the machine
 /// is removed from the registry.
-#[derive(Serialize, Debug, Deserialize, PartialEq)]
+#[derive(Serialize, Debug, Deserialize, PartialEq, Clone)]
 pub enum State {
     Running,
     Pending,
@@ -34,13 +34,13 @@ pub enum State {
 /// All the nodes that register with the leader, will be stored in the registry.
 ///
 /// When a node first initializes, it adds itself to a local registry.
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct Node {
-    ip: Ipv4Addr,
-    log_path: String,
-    state: State,
-    leader: bool,
-    name: String,
+    pub ip: Ipv4Addr,
+    pub log_path: String,
+    pub state: State,
+    pub leader: bool,
+    pub name: String,
 }
 
 impl Node {

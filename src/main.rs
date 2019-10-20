@@ -89,9 +89,10 @@ async fn main() -> Result<(), std::io::Error> {
         .unwrap();
     info!("Initializing node, waiting for peers...");
 
-    let mut node = Node::default();
-    node.init(&config).await?;
-    let mut registry = Registry::init(node).register(None).await;
+    let mut init_node = Node::default();
+    init_node.init(&config).await?;
+    let mut registry = Registry::default();
+    registry.register(init_node).await;
 
     runtime::spawn(async move {
         let mut node_listener = TcpListener::bind(&node_sock_addr.to_string()).unwrap();
@@ -110,6 +111,7 @@ async fn main() -> Result<(), std::io::Error> {
                             std::str::from_utf8(&buff).unwrap(),
                             &client.peer_addr().unwrap()
                         );
+//                        registry.register(node);
                         Ok::<(), std::io::Error>(())
                     })
                     .await

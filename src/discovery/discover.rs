@@ -1,10 +1,9 @@
 use super::nodes::Node;
-use std::io::Error;
-
+use super::nodes::State::Running;
 /// The `registry` contains all the functional nodes to which the leader will
 /// broadcast messages to.
 ///
-/// It will ensure that the nodes are all valid by reporting Status::Running.
+/// It will ensure that the nodes are all valid by reporting `Status::Running`.
 /// Nodes that do not fulfill the `Running` state will be remove from the
 /// registry.
 ///
@@ -18,48 +17,22 @@ use std::io::Error;
 #[derive(Debug)]
 pub struct Registry {
     // peers is of the Option type for init convenience here.
-    pub peers: Vec<Option<Node>>,
+    pub peers: Vec<Node>,
     pub cvorum: bool,
 }
 
 impl Registry {
-    pub fn init(node: Node) -> Registry {
-        let mut peers = vec![];
-        peers.push(Some(node));
 
-        Registry {
-            peers: peers,
-            cvorum: false,
-        }
-    }
     /// Register handles the registration of a node.
     /// The nodes is checked against the current list of nodes that the registry
     /// has.
     /// The node needs to be in a `Running` state to be added successfully.
-    pub async fn register(&mut self, node: Option<Node>) {
-        match node {
-            None => return,
-            Some(node) => {
-                // NOTE: this is, pretty much garbage.
-                let found = self.peers.iter().find(|&n| match n {
-                    Some(no) => {
-                        let x = &node == no;
-                        debug!("i found a node: {:?}", x);
-                        true
-                    }
-                    None => false,
-                });
-
-                match found {
-                    Some(_) => debug!("Node already present. Skipping..."),
-                    None => {
-                        self.peers.push(Some(node));
-                        debug!("{:?}", self);
-                    }
-                }
-                self.check_cvorum().await;
-                debug!("No of peers: {:?}", self.peers);
+    pub async fn register(&mut self, node: Node) {
+        match node.state {
+            Running => {
+                self.peers.push(node);
             }
+            _ => {}
         }
     }
     /// Unregister will remove a node from the registry.
@@ -83,5 +56,15 @@ impl Registry {
         }
         self.cvorum = false;
         debug!("cvorum not met!");
+    }
+}
+
+impl Default for Registry {
+    fn default() -> Registry {
+        let peers = vec![];
+        Registry {
+            peers: peers,
+            cvorum: false,
+        }
     }
 }
