@@ -1,5 +1,4 @@
-use super::nodes::Node;
-use super::nodes::State::Running;
+use crate::protos::registry::{Node, Node_State};
 /// The `registry` contains all the functional nodes to which the leader will
 /// broadcast messages to.
 ///
@@ -22,14 +21,13 @@ pub struct Registry {
 }
 
 impl Registry {
-
     /// Register handles the registration of a node.
     /// The nodes is checked against the current list of nodes that the registry
     /// has.
     /// The node needs to be in a `Running` state to be added successfully.
     pub async fn register(&mut self, node: Node) {
         match node.state {
-            Running => {
+            Node_State::Running => {
                 self.peers.push(node);
             }
             _ => {}
