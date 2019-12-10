@@ -17,7 +17,7 @@
 #![allow(unsafe_code)]
 #![allow(unused_imports)]
 #![allow(unused_results)]
-//! Generated file from `registry.proto`
+//! Generated file from `node.proto`
 
 use protobuf::Message as Message_imported_for_functions;
 use protobuf::ProtobufEnum as ProtobufEnum_imported_for_functions;
@@ -362,12 +362,12 @@ impl ::protobuf::reflect::ProtobufValue for Node_State {
 }
 
 static file_descriptor_proto_data: &'static [u8] = b"\
-    \n\x0eregistry.proto\x12\x04node\"\x9f\x01\n\x04Node\x12\x0e\n\x02id\x18\
-    \x01\x20\x01(\tR\x02id\x12\x18\n\x07address\x18\x02\x20\x01(\tR\x07addre\
-    ss\x12\x16\n\x06leader\x18\x03\x20\x01(\x08R\x06leader\x12&\n\x05state\
-    \x18\x04\x20\x01(\x0e2\x10.node.Node.StateR\x05state\"-\n\x05State\x12\
-    \x0b\n\x07Running\x10\0\x12\x0b\n\x07Pending\x10\x01\x12\n\n\x06Failed\
-    \x10\x02b\x06proto3\
+    \n\nnode.proto\x12\x04node\"\x9f\x01\n\x04Node\x12\x0e\n\x02id\x18\x01\
+    \x20\x01(\tR\x02id\x12\x18\n\x07address\x18\x02\x20\x01(\tR\x07address\
+    \x12\x16\n\x06leader\x18\x03\x20\x01(\x08R\x06leader\x12&\n\x05state\x18\
+    \x04\x20\x01(\x0e2\x10.node.Node.StateR\x05state\"-\n\x05State\x12\x0b\n\
+    \x07Running\x10\0\x12\x0b\n\x07Pending\x10\x01\x12\n\n\x06Failed\x10\x02\
+    b\x06proto3\
 ";
 
 static mut file_descriptor_proto_lazy: ::protobuf::lazy::Lazy<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::lazy::Lazy {

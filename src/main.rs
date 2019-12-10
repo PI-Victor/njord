@@ -8,15 +8,17 @@ extern crate env_logger;
 extern crate protobuf;
 extern crate tokio;
 
+use futures::future::*;
 use futures::prelude::*;
+use futures::stream::*;
+
 use std::net::{Ipv4Addr, SocketAddrV4};
 use std::str;
 use std::string::String;
 
 use clap::{App, AppSettings, Arg, SubCommand};
 use config::{Config, ConfigError, Environment, File};
-use protobuf::{parse_from_bytes, Message};
-use std::{thread, time};
+use protobuf::*;
 use tokio::net::{TcpListener, TcpStream};
 use tokio::prelude::*;
 use tokio::task;
@@ -26,7 +28,7 @@ mod protos;
 
 use discovery::discover::Registry;
 use discovery::nodes::{DEFAULT_NODE_NAME, LOG_PATH};
-use protos::registry;
+use protos::node;
 
 const VERSION: &str = "v0.1.0-alpha";
 const ASCIIART: &str = r#"
@@ -95,63 +97,51 @@ async fn main() -> Result<(), std::io::Error> {
         .parse::<SocketAddrV4>()
         .unwrap();
     info!("Initializing node, waiting for peers...");
-
-    let mut init_node = registry::Node::new();
+    let mut init_node = node::Node::new();
     init_node.set_address(config.bind_address.to_string().clone());
     init_node.set_id(config.node_name.clone());
     init_node.set_leader(true);
-    init_node.set_state(registry::Node_State::Running);
-
+    init_node.set_state(node::Node_State::Running);
     info!("The node: {:?}", init_node);
-    let clone_node = init_node.clone();
-    //init_node.init(&config).await?;
-    //    let mut registry = Registry::default();
-    //    registry.register(init_node).await;
+    let mut registry = Registry::default();
+    registry.register(init_node.clone()).await;
 
     task::spawn(async move {
-        let mut node_listener = TcpListener::bind(&node_sock_addr.to_string())
-            .await
-            .unwrap();
-
-        info!("Listening for nodes on: {:?}", &node_sock_addr.to_string());
-        let mut stream = node_listener.incoming();
-        loop {
-            while let Some(data) = stream.next().await {
-                match data {
-                    Ok(mut d) => {
-                        let mut buf = vec![0u8; 1024];
-                        d.read_to_end(&mut buf).await.unwrap();
-                        let node = parse_from_bytes::<registry::Node>(&buf);
-                        info!("this is the node {:?}", node);
-                        info!("this is the buffer: {:?}", String::from_utf8_lossy(&buf));
-                    }
-                    Err(e) => error!("falied : {:}", e.to_string()),
+        TcpListener::bind(&node_sock_addr.to_string())
+            .and_then(|mut socket| {
+                async move {
+                    socket
+                        .incoming()
+                        .try_for_each_concurrent(None, |mut stream| {
+                            async move {
+                                let mut buf = vec![];
+                                let res = stream.read_to_end(&mut buf).await;
+                                match res {
+                                    Ok(_) => {
+                                        let node =
+                                            protobuf::parse_from_bytes::<node::Node>(&buf);
+                                        match node {
+                                            Ok(node) => {
+                                                info!("this is the node: {:?}", node);
+                                            }
+                                            Err(err) => {
+                                                error!("failed to deserialize node: {:}", err)
+                                            }
+                                        }
+                                    }
+                                    Err(err) => error!("failed to read stream: {:}", err),
+                                }
+                                Ok::<(), std::io::Error>(())
+                            }
+                        })
+                        .map_err(|err| error!("failed to handle stream {:}", err))
+                        .await
+                        .unwrap();
+                    Ok(())
                 }
-            }
-        }
-
-        // .try_for_each_concurrent(None, |mut socket| {
-        //     async move {
-        //         // NOTE: Mutate (safely) the state of the registry by
-        //         // registering new clients that sent requests.
-        //         task::spawn(async move {
-
-        //             match &msg {
-        //                 Ok(b) => info!("Successful: {:?}", b),
-        //                 Err(x) => error!("Failed: {:}", x.to_string()),
-        //             };
-        //             debug!(
-        //                 "message received while waiting for nodes: {:?}, {:#?}",
-        //                 msg,
-        //                 &socket.peer_addr().unwrap()
-        //             );
-        //             /* registry.register(node); */
-        //             Ok::<(), std::io::Error>(())
-        //         })
-        //         .await?
-        //     }
-        // })
-        // .await.unwrap();
+            })
+            .await
+            .unwrap()
     });
 
     task::spawn(async move {
@@ -159,20 +149,21 @@ async fn main() -> Result<(), std::io::Error> {
         for node_addr in config.peers.iter() {
             debug!("Trying to contact: {:?}", &node_addr.to_string());
 
-            thread::sleep(time::Duration::from_secs(3));
+            //            thread::sleep(time::Duration::from_secs(3));
             let client_socket = TcpStream::connect(&node_addr.to_string()).await;
-            // match client_socket {
-            //     Ok(_) => info!("Successfully connected to {:?}", client_socket),
-            //     Err(c) => info!("plm: {:?}", &c)
-            // }
             match client_socket {
                 Ok(mut socket) => {
-                    let msg = clone_node.write_to_bytes().unwrap();
-                    debug!("Writing message: {:}", str::from_utf8(&msg).unwrap());
-                    let res = socket.write_all(&msg).await;
-                    match res {
-                        Ok(_) => debug!("Wrote to client at: {:?}", socket),
-                        Err(f) => debug!("we got an error: {:?}", f),
+                    let msg = init_node.write_to_bytes();
+                    match msg {
+                        Ok(res) => {
+                            debug!("Writing message: {:?}", &res);
+                            let res = socket.write(&res).await;
+                            match res {
+                                Ok(_) => debug!("Wrote to client at: {:?}", socket),
+                                Err(f) => debug!("we got an error sending the message: {:?}", f),
+                            }
+                        }
+                        Err(err) => info!("failed to byte serialize: {:}", err),
                     }
                 }
                 Err(e) => debug!("Failed to connect to client: {:?}", &e),
@@ -189,7 +180,7 @@ async fn main() -> Result<(), std::io::Error> {
 
     client_listener
         .incoming()
-        .try_for_each_concurrent(None, |client| {
+        .try_for_each_concurrent(None, |_client| {
             async move { task::spawn(async move { Ok::<(), std::io::Error>(()) }).await? }
         })
         .await?;

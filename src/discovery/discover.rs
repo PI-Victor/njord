@@ -1,4 +1,4 @@
-use crate::protos::registry::{Node, Node_State};
+use crate::protos::node::{Node, Node_State};
 /// The `registry` contains all the functional nodes to which the leader will
 /// broadcast messages to.
 ///

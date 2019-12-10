@@ -1,8 +1,6 @@
 syntax = "proto3";
 
-package registry;
-
-service registry {};
+package node;
 
 message Node {
   string id = 1;
