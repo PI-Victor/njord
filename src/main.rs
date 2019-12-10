@@ -98,13 +98,19 @@ async fn main() -> Result<(), std::io::Error> {
         .unwrap();
     info!("Initializing node, waiting for peers...");
     let mut init_node = node::Node::new();
+
     init_node.set_address(config.bind_address.to_string().clone());
     init_node.set_id(config.node_name.clone());
     init_node.set_leader(true);
     init_node.set_state(node::Node_State::Running);
+    
+    let cloned_node = init_node.clone();
     info!("The node: {:?}", init_node);
-    let mut registry = Registry::default();
-    registry.register(init_node.clone()).await;
+
+    task::spawn(async move {
+        let mut registry = Registry::default();
+        registry.register(cloned_node).await;
+    });
 
     task::spawn(async move {
         TcpListener::bind(&node_sock_addr.to_string())
@@ -118,8 +124,7 @@ async fn main() -> Result<(), std::io::Error> {
                                 let res = stream.read_to_end(&mut buf).await;
                                 match res {
                                     Ok(_) => {
-                                        let node =
-                                            protobuf::parse_from_bytes::<node::Node>(&buf);
+                                        let node = protobuf::parse_from_bytes::<node::Node>(&buf);
                                         match node {
                                             Ok(node) => {
                                                 info!("this is the node: {:?}", node);
