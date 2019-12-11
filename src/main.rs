@@ -15,6 +15,7 @@ use futures::stream::*;
 use std::net::{Ipv4Addr, SocketAddrV4};
 use std::str;
 use std::string::String;
+use std::sync::mpsc;
 
 use clap::{App, AppSettings, Arg, SubCommand};
 use config::{Config, ConfigError, Environment, File};
@@ -103,50 +104,35 @@ async fn main() -> Result<(), std::io::Error> {
     init_node.set_id(config.node_name.clone());
     init_node.set_leader(true);
     init_node.set_state(node::Node_State::Running);
-    
-    let cloned_node = init_node.clone();
-    info!("The node: {:?}", init_node);
+    let mut registry = Registry::default();
 
     task::spawn(async move {
-        let mut registry = Registry::default();
-        registry.register(cloned_node).await;
+        info!("{:?}", registry);
     });
 
     task::spawn(async move {
         TcpListener::bind(&node_sock_addr.to_string())
-            .and_then(|mut socket| {
+            .then(|socket| {
                 async move {
-                    socket
-                        .incoming()
-                        .try_for_each_concurrent(None, |mut stream| {
-                            async move {
-                                let mut buf = vec![];
-                                let res = stream.read_to_end(&mut buf).await;
-                                match res {
-                                    Ok(_) => {
-                                        let node = protobuf::parse_from_bytes::<node::Node>(&buf);
-                                        match node {
-                                            Ok(node) => {
-                                                info!("this is the node: {:?}", node);
-                                            }
-                                            Err(err) => {
-                                                error!("failed to deserialize node: {:}", err)
-                                            }
-                                        }
-                                    }
-                                    Err(err) => error!("failed to read stream: {:}", err),
+                    match socket {
+                        Ok(mut stream) => {
+                            let res = stream.incoming().next().await.unwrap();
+                            match res {
+                                Ok(mut msg) => {
+                                    info!("{:?}", msg);
+                                    let mut buf = vec![];
+                                    msg.read_to_end(&mut buf).await.unwrap();
+                                    let node = parse_from_bytes(&buf).unwrap();
+                                    registry.register(node).await;
                                 }
-                                Ok::<(), std::io::Error>(())
+                                Err(err) => error!("{:}", err),
                             }
-                        })
-                        .map_err(|err| error!("failed to handle stream {:}", err))
-                        .await
-                        .unwrap();
-                    Ok(())
+                        }
+                        Err(err) => error!("failed to read stream: {:}", err),
+                    }
                 }
             })
-            .await
-            .unwrap()
+            .await;
     });
 
     task::spawn(async move {
