@@ -3,7 +3,7 @@ use std::net::Ipv4Addr;
 
 use std::io::{Error, ErrorKind};
 
-use crate::Configuration;
+use crate::util::config;
 
 pub const LOG_PATH: &'static str = "opt/njord/log";
 pub const DEFAULT_NODE_NAME: &'static str = "initial";
@@ -47,7 +47,7 @@ impl Node {
     /// Function init will initialize a local node, will attempt to create the
     /// location where the local log data is store and will flush the
     /// current machine state to the disk.
-    pub async fn init(&mut self, conf: &Configuration) -> Result<Self, Error> {
+    pub async fn init(&mut self, conf: &config::Configuration) -> Result<Self, Error> {
         match create_dir_all(&conf.log_path) {
             Ok(_) => Ok(Self {
                 ip: conf.bind_address,

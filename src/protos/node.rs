@@ -32,7 +32,7 @@ pub struct Node {
     pub id: ::std::string::String,
     pub address: ::std::string::String,
     pub leader: bool,
-    pub state: Node_State,
+    pub state: State,
     // special fields
     pub unknown_fields: ::protobuf::UnknownFields,
     pub cached_size: ::protobuf::CachedSize,
@@ -116,18 +116,18 @@ impl Node {
         self.leader = v;
     }
 
-    // .node.Node.State state = 4;
+    // .node.State state = 4;
 
 
-    pub fn get_state(&self) -> Node_State {
+    pub fn get_state(&self) -> State {
         self.state
     }
     pub fn clear_state(&mut self) {
-        self.state = Node_State::Running;
+        self.state = State::Running;
     }
 
     // Param is passed by value, moved
-    pub fn set_state(&mut self, v: Node_State) {
+    pub fn set_state(&mut self, v: State) {
         self.state = v;
     }
 }
@@ -178,7 +178,7 @@ impl ::protobuf::Message for Node {
         if self.leader != false {
             my_size += 2;
         }
-        if self.state != Node_State::Running {
+        if self.state != State::Running {
             my_size += ::protobuf::rt::enum_size(4, self.state);
         }
         my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
@@ -196,7 +196,7 @@ impl ::protobuf::Message for Node {
         if self.leader != false {
             os.write_bool(3, self.leader)?;
         }
-        if self.state != Node_State::Running {
+        if self.state != State::Running {
             os.write_enum(4, self.state.value())?;
         }
         os.write_unknown_fields(self.get_unknown_fields())?;
@@ -256,7 +256,7 @@ impl ::protobuf::Message for Node {
                     |m: &Node| { &m.leader },
                     |m: &mut Node| { &mut m.leader },
                 ));
-                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeEnum<Node_State>>(
+                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeEnum<State>>(
                     "state",
                     |m: &Node| { &m.state },
                     |m: &mut Node| { &mut m.state },
@@ -286,7 +286,7 @@ impl ::protobuf::Clear for Node {
         self.id.clear();
         self.address.clear();
         self.leader = false;
-        self.state = Node_State::Running;
+        self.state = State::Running;
         self.unknown_fields.clear();
     }
 }
@@ -303,32 +303,232 @@ impl ::protobuf::reflect::ProtobufValue for Node {
     }
 }
 
+#[derive(PartialEq,Clone,Default)]
+pub struct Reply {
+    // message fields
+    pub node_id: ::std::string::String,
+    pub state: State,
+    // special fields
+    pub unknown_fields: ::protobuf::UnknownFields,
+    pub cached_size: ::protobuf::CachedSize,
+}
+
+impl<'a> ::std::default::Default for &'a Reply {
+    fn default() -> &'a Reply {
+        <Reply as ::protobuf::Message>::default_instance()
+    }
+}
+
+impl Reply {
+    pub fn new() -> Reply {
+        ::std::default::Default::default()
+    }
+
+    // string node_id = 1;
+
+
+    pub fn get_node_id(&self) -> &str {
+        &self.node_id
+    }
+    pub fn clear_node_id(&mut self) {
+        self.node_id.clear();
+    }
+
+    // Param is passed by value, moved
+    pub fn set_node_id(&mut self, v: ::std::string::String) {
+        self.node_id = v;
+    }
+
+    // Mutable pointer to the field.
+    // If field is not initialized, it is initialized with default value first.
+    pub fn mut_node_id(&mut self) -> &mut ::std::string::String {
+        &mut self.node_id
+    }
+
+    // Take field
+    pub fn take_node_id(&mut self) -> ::std::string::String {
+        ::std::mem::replace(&mut self.node_id, ::std::string::String::new())
+    }
+
+    // .node.State state = 2;
+
+
+    pub fn get_state(&self) -> State {
+        self.state
+    }
+    pub fn clear_state(&mut self) {
+        self.state = State::Running;
+    }
+
+    // Param is passed by value, moved
+    pub fn set_state(&mut self, v: State) {
+        self.state = v;
+    }
+}
+
+impl ::protobuf::Message for Reply {
+    fn is_initialized(&self) -> bool {
+        true
+    }
+
+    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::ProtobufResult<()> {
+        while !is.eof()? {
+            let (field_number, wire_type) = is.read_tag_unpack()?;
+            match field_number {
+                1 => {
+                    ::protobuf::rt::read_singular_proto3_string_into(wire_type, is, &mut self.node_id)?;
+                },
+                2 => {
+                    ::protobuf::rt::read_proto3_enum_with_unknown_fields_into(wire_type, is, &mut self.state, 2, &mut self.unknown_fields)?
+                },
+                _ => {
+                    ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
+                },
+            };
+        }
+        ::std::result::Result::Ok(())
+    }
+
+    // Compute sizes of nested messages
+    #[allow(unused_variables)]
+    fn compute_size(&self) -> u32 {
+        let mut my_size = 0;
+        if !self.node_id.is_empty() {
+            my_size += ::protobuf::rt::string_size(1, &self.node_id);
+        }
+        if self.state != State::Running {
+            my_size += ::protobuf::rt::enum_size(2, self.state);
+        }
+        my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
+        self.cached_size.set(my_size);
+        my_size
+    }
+
+    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::ProtobufResult<()> {
+        if !self.node_id.is_empty() {
+            os.write_string(1, &self.node_id)?;
+        }
+        if self.state != State::Running {
+            os.write_enum(2, self.state.value())?;
+        }
+        os.write_unknown_fields(self.get_unknown_fields())?;
+        ::std::result::Result::Ok(())
+    }
+
+    fn get_cached_size(&self) -> u32 {
+        self.cached_size.get()
+    }
+
+    fn get_unknown_fields(&self) -> &::protobuf::UnknownFields {
+        &self.unknown_fields
+    }
+
+    fn mut_unknown_fields(&mut self) -> &mut ::protobuf::UnknownFields {
+        &mut self.unknown_fields
+    }
+
+    fn as_any(&self) -> &dyn (::std::any::Any) {
+        self as &dyn (::std::any::Any)
+    }
+    fn as_any_mut(&mut self) -> &mut dyn (::std::any::Any) {
+        self as &mut dyn (::std::any::Any)
+    }
+    fn into_any(self: Box<Self>) -> ::std::boxed::Box<dyn (::std::any::Any)> {
+        self
+    }
+
+    fn descriptor(&self) -> &'static ::protobuf::reflect::MessageDescriptor {
+        Self::descriptor_static()
+    }
+
+    fn new() -> Reply {
+        Reply::new()
+    }
+
+    fn descriptor_static() -> &'static ::protobuf::reflect::MessageDescriptor {
+        static mut descriptor: ::protobuf::lazy::Lazy<::protobuf::reflect::MessageDescriptor> = ::protobuf::lazy::Lazy {
+            lock: ::protobuf::lazy::ONCE_INIT,
+            ptr: 0 as *const ::protobuf::reflect::MessageDescriptor,
+        };
+        unsafe {
+            descriptor.get(|| {
+                let mut fields = ::std::vec::Vec::new();
+                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeString>(
+                    "node_id",
+                    |m: &Reply| { &m.node_id },
+                    |m: &mut Reply| { &mut m.node_id },
+                ));
+                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeEnum<State>>(
+                    "state",
+                    |m: &Reply| { &m.state },
+                    |m: &mut Reply| { &mut m.state },
+                ));
+                ::protobuf::reflect::MessageDescriptor::new::<Reply>(
+                    "Reply",
+                    fields,
+                    file_descriptor_proto()
+                )
+            })
+        }
+    }
+
+    fn default_instance() -> &'static Reply {
+        static mut instance: ::protobuf::lazy::Lazy<Reply> = ::protobuf::lazy::Lazy {
+            lock: ::protobuf::lazy::ONCE_INIT,
+            ptr: 0 as *const Reply,
+        };
+        unsafe {
+            instance.get(Reply::new)
+        }
+    }
+}
+
+impl ::protobuf::Clear for Reply {
+    fn clear(&mut self) {
+        self.node_id.clear();
+        self.state = State::Running;
+        self.unknown_fields.clear();
+    }
+}
+
+impl ::std::fmt::Debug for Reply {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        ::protobuf::text_format::fmt(self, f)
+    }
+}
+
+impl ::protobuf::reflect::ProtobufValue for Reply {
+    fn as_ref(&self) -> ::protobuf::reflect::ProtobufValueRef {
+        ::protobuf::reflect::ProtobufValueRef::Message(self)
+    }
+}
+
 #[derive(Clone,PartialEq,Eq,Debug,Hash)]
-pub enum Node_State {
+pub enum State {
     Running = 0,
     Pending = 1,
     Failed = 2,
 }
 
-impl ::protobuf::ProtobufEnum for Node_State {
+impl ::protobuf::ProtobufEnum for State {
     fn value(&self) -> i32 {
         *self as i32
     }
 
-    fn from_i32(value: i32) -> ::std::option::Option<Node_State> {
+    fn from_i32(value: i32) -> ::std::option::Option<State> {
         match value {
-            0 => ::std::option::Option::Some(Node_State::Running),
-            1 => ::std::option::Option::Some(Node_State::Pending),
-            2 => ::std::option::Option::Some(Node_State::Failed),
+            0 => ::std::option::Option::Some(State::Running),
+            1 => ::std::option::Option::Some(State::Pending),
+            2 => ::std::option::Option::Some(State::Failed),
             _ => ::std::option::Option::None
         }
     }
 
     fn values() -> &'static [Self] {
-        static values: &'static [Node_State] = &[
-            Node_State::Running,
-            Node_State::Pending,
-            Node_State::Failed,
+        static values: &'static [State] = &[
+            State::Running,
+            State::Pending,
+            State::Failed,
         ];
         values
     }
@@ -340,34 +540,35 @@ impl ::protobuf::ProtobufEnum for Node_State {
         };
         unsafe {
             descriptor.get(|| {
-                ::protobuf::reflect::EnumDescriptor::new("Node_State", file_descriptor_proto())
+                ::protobuf::reflect::EnumDescriptor::new("State", file_descriptor_proto())
             })
         }
     }
 }
 
-impl ::std::marker::Copy for Node_State {
+impl ::std::marker::Copy for State {
 }
 
-impl ::std::default::Default for Node_State {
+impl ::std::default::Default for State {
     fn default() -> Self {
-        Node_State::Running
+        State::Running
     }
 }
 
-impl ::protobuf::reflect::ProtobufValue for Node_State {
+impl ::protobuf::reflect::ProtobufValue for State {
     fn as_ref(&self) -> ::protobuf::reflect::ProtobufValueRef {
         ::protobuf::reflect::ProtobufValueRef::Enum(self.descriptor())
     }
 }
 
 static file_descriptor_proto_data: &'static [u8] = b"\
-    \n\nnode.proto\x12\x04node\"\x9f\x01\n\x04Node\x12\x0e\n\x02id\x18\x01\
-    \x20\x01(\tR\x02id\x12\x18\n\x07address\x18\x02\x20\x01(\tR\x07address\
-    \x12\x16\n\x06leader\x18\x03\x20\x01(\x08R\x06leader\x12&\n\x05state\x18\
-    \x04\x20\x01(\x0e2\x10.node.Node.StateR\x05state\"-\n\x05State\x12\x0b\n\
-    \x07Running\x10\0\x12\x0b\n\x07Pending\x10\x01\x12\n\n\x06Failed\x10\x02\
-    b\x06proto3\
+    \n\nnode.proto\x12\x04node\"k\n\x04Node\x12\x0e\n\x02id\x18\x01\x20\x01(\
+    \tR\x02id\x12\x18\n\x07address\x18\x02\x20\x01(\tR\x07address\x12\x16\n\
+    \x06leader\x18\x03\x20\x01(\x08R\x06leader\x12!\n\x05state\x18\x04\x20\
+    \x01(\x0e2\x0b.node.StateR\x05state\"C\n\x05Reply\x12\x17\n\x07node_id\
+    \x18\x01\x20\x01(\tR\x06nodeId\x12!\n\x05state\x18\x02\x20\x01(\x0e2\x0b\
+    .node.StateR\x05state*-\n\x05State\x12\x0b\n\x07Running\x10\0\x12\x0b\n\
+    \x07Pending\x10\x01\x12\n\n\x06Failed\x10\x02b\x06proto3\
 ";
 
 static mut file_descriptor_proto_lazy: ::protobuf::lazy::Lazy<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::lazy::Lazy {
