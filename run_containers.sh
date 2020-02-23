@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-cargo build 
+docker run -u 1000 -w /app -ti -v $(pwd):/app rust:buster cargo build 
 
 docker network rm njord || true
 docker network create --subnet 10.0.0.0/24 njord
