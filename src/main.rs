@@ -7,7 +7,6 @@ extern crate clap;
 extern crate log;
 extern crate env_logger;
 extern crate futures;
-extern crate protobuf;
 extern crate tokio;
 
 use futures::prelude::*;
@@ -17,6 +16,8 @@ use std::str;
 
 use clap::{App, AppSettings, Arg, SubCommand};
 use config::{Config, ConfigError, Environment, File};
+
+mod conf;
 
 const VERSION: &str = "v0.1.0-alpha";
 const ASCIIART: &str = r#"
@@ -85,7 +86,6 @@ async fn main() -> Result<(), std::io::Error> {
         .parse::<SocketAddrV4>()
         .unwrap();
     info!("Initializing node, waiting for peers...");
-    let mut init_node = node::Node::new();
 
     Ok::<(), std::io::Error>(())
 }

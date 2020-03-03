@@ -2,10 +2,10 @@
 node_name: node4
 bind_address: "0.0.0.0"
 peers:
-  - 10.0.0.50:8717
-  - 10.0.0.51:8717
-  - 10.0.0.52:8717
-  - 10.0.0.54:8717
+  - 10.0.0.50
+  - 10.0.0.51
+  - 10.0.0.52
+  - 10.0.0.54
 partitions: 4
 replicas: 4
-log_path: "/opt/njord/log/"
+log_path: "/var/lib/njord/data"
