@@ -6,11 +6,12 @@ edition = "2018"
 
 [dependencies]
 futures = "0.3.4"
-tokio = { version = "0.2.11", features = ["full"] }
-serde = "1.0.99"
-serde_derive = "1.0.99"
+tokio = { version = "^0.2.13", features = ["full"] }
+serde = "1.0.104"
+serde_derive = "1.0.104"
 clap = "2.33.0"
-config = "0.9.3"
-env_logger = "0.6.2"
+config = "0.10.1"
+env_logger = "0.7.1"
 log = "0.4.8"
-tonic = "0.1.1"
+raft-rs = "0.1.0"
+tarpc = {vrsion = "0.20.0", features = ["full"]}

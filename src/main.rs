@@ -6,16 +6,15 @@ extern crate clap;
 extern crate log;
 extern crate env_logger;
 extern crate futures;
+extern crate raft_rs;
 extern crate tokio;
-
-use futures::prelude::*;
 
 use std::net::SocketAddrV4;
 use std::str;
 
 use clap::{App, AppSettings, Arg, SubCommand};
-use config::{Config, ConfigError, Environment, File};
 
+mod server;
 mod util;
 
 use util::config as conf;

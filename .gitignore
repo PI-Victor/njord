@@ -4,3 +4,4 @@ shep
 .shep.yaml
 postgres.yaml
 *.#*
+Cargo.lock
