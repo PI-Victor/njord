@@ -16,10 +16,10 @@ impl<'a> Default for LocalStorage<'a> {
 }
 
 impl<'a> StorageDriver for LocalStorage<'a> {
-    fn flush_data(self) -> Result<(), Error> {
+    fn flush_data(&self) -> Result<(), Error> {
         Ok(())
     }
-    fn init_storage(self) -> Result<(), Error> {
+    fn init_storage(&self) -> Result<(), Error> {
         Ok(())
     }
 }
@@ -27,6 +27,7 @@ impl<'a> StorageDriver for LocalStorage<'a> {
 #[cfg(test)]
 mod test {
     use super::LocalStorage;
+    use super::StorageDriver;
 
     #[test]
     fn test_default_node() {
@@ -37,11 +38,12 @@ mod test {
     #[test]
     fn test_flush_data() {
         let local_storage = LocalStorage::default();
+        local_storage.flush_data().unwrap();
     }
 
     #[test]
     fn test_init_storage() {
         let local_storage = LocalStorage::default();
-        println!("{:?}", local_storage)
+        local_storage.init_storage().unwrap();
     }
 }
