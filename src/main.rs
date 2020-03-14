@@ -16,6 +16,7 @@ use std::str;
 use clap::{App, AppSettings, Arg, SubCommand};
 
 mod server;
+mod storage;
 mod util;
 
 use util::config as conf;
