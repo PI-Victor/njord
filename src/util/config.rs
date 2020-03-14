@@ -3,32 +3,28 @@ extern crate config;
 use config::{Config, ConfigError, Environment, File};
 use std::net::{Ipv4Addr, SocketAddrV4};
 
-#[derive(Deserialize, Debug, Clone)]
-pub struct Configuration {
+#[derive(Debug, Deserialize)]
+pub struct Configuration<'a> {
     pub bind_address: Ipv4Addr,
     pub peers: Vec<SocketAddrV4>,
-    pub replicas: u8,
-    pub partitions: u8,
-    pub log_path: String,
     pub node_name: String,
+    pub storage: &'a str,
 }
 
-impl Default for Configuration {
+impl<'a> Default for Configuration<'a> {
     fn default() -> Self {
         let sample_peer = "127.0.0.1:8717".parse::<SocketAddrV4>().unwrap();
 
         Self {
             bind_address: "127.0.0.1".parse::<Ipv4Addr>().unwrap(),
             peers: vec![sample_peer],
-            partitions: 4,
-            replicas: 5,
-            log_path: "/var/njord/log".to_string(),
             node_name: "default".to_string(),
+            storage: "local",
         }
     }
 }
 
-impl Configuration {
+impl<'a> Configuration<'a> {
     pub fn new(path: &str) -> Result<Self, ConfigError> {
         let mut c = Config::new();
         c.merge(File::with_name(path))?;

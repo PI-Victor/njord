@@ -80,10 +80,10 @@ async fn main() -> Result<(), std::io::Error> {
         .filter(Some(module_path!()), log_level)
         .init();
     debug!("Loaded configuration: {:?}", config);
-    let client_sock_addr = format!("{:}:8718", &config.bind_address)
+    let _client_sock_addr = format!("{:}:8718", &config.bind_address)
         .parse::<SocketAddrV4>()
         .unwrap();
-    let node_sock_addr = format!("{:}:8717", &config.bind_address)
+    let _node_sock_addr = format!("{:}:8717", &config.bind_address)
         .parse::<SocketAddrV4>()
         .unwrap();
     info!("Initializing node, waiting for peers...");

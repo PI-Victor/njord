@@ -1,4 +1,4 @@
-use std::io::{Error, ErrorKind};
+use std::io::Error;
 
 #[derive(Debug)]
 pub struct Node {
@@ -11,12 +11,15 @@ pub enum State {
     Failed,
 }
 
-impl Node {
+impl Default for Node {
     fn default() -> Self {
         Node {
             state: State::Pending,
         }
     }
+}
+
+impl Node {
     pub fn init(self) -> Result<(), Error> {
         Ok(())
     }
