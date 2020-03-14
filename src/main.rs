@@ -7,6 +7,7 @@ extern crate log;
 extern crate env_logger;
 extern crate futures;
 extern crate raft_rs;
+extern crate tarpc;
 extern crate tokio;
 
 use std::net::SocketAddrV4;
