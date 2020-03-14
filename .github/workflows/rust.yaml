@@ -7,9 +7,6 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     steps:
-      - name: Get protoc
-        run: curl -OL  https://github.com/protocolbuffers/protobuf/releases/download/v3.9.2/protoc-3.9.2-linux-x86_64.zip
-
       - uses: hecrj/setup-rust-action@v1
         with:
           rust-version: nightly

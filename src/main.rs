@@ -1,5 +1,4 @@
 extern crate serde;
-extern crate tokio;
 #[macro_use]
 extern crate serde_derive;
 extern crate clap;
@@ -17,7 +16,9 @@ use std::str;
 use clap::{App, AppSettings, Arg, SubCommand};
 use config::{Config, ConfigError, Environment, File};
 
-mod conf;
+mod util;
+
+use util::config as conf;
 
 const VERSION: &str = "v0.1.0-alpha";
 const ASCIIART: &str = r#"

@@ -1,6 +1,5 @@
 extern crate config;
 
-use crate::discovery::nodes::{DEFAULT_NODE_NAME, LOG_PATH};
 use config::{Config, ConfigError, Environment, File};
 use std::net::{Ipv4Addr, SocketAddrV4};
 
@@ -23,8 +22,8 @@ impl Default for Configuration {
             peers: vec![sample_peer],
             partitions: 4,
             replicas: 5,
-            log_path: LOG_PATH.to_string(),
-            node_name: DEFAULT_NODE_NAME.to_string(),
+            log_path: "/var/njord/log".to_string(),
+            node_name: "default".to_string(),
         }
     }
 }
