@@ -13,7 +13,7 @@ use super::local::LocalStorage;
 pub fn new_storage_driver(driver: &str) -> Result<Box<dyn StorageDriver>, Error> {
     match driver {
         "local" => Ok(Box::new(LocalStorage::default())),
-        (driver) => {
+        driver => {
             let err_msg = format!("Storage driver: {:}, not found", driver);
             Err(Error::new(ErrorKind::Other, err_msg))
         }
