@@ -3,6 +3,7 @@ name = "njord"
 version = "0.1.0"
 authors = ["Victor Palade <victor@cloudflavor.io>"]
 edition = "2018"
+build = "build.rs"
 
 [dependencies]
 futures = "0.3.4"
@@ -13,5 +14,8 @@ clap = "2.33.0"
 config = "0.10.1"
 env_logger = "0.7.1"
 log = "0.4.8"
-raft-rs = "0.1.0"
-tarpc = {version = "0.20.0", features = ["full"]}
+raft = "0.6.0-alpha"
+protobuf = { version = "^2.10.2", features = ["with-bytes"] }
+
+[build-dependencies]
+protoc-rust = "2.0" 

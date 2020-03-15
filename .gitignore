@@ -5,3 +5,4 @@ shep
 postgres.yaml
 *.#*
 Cargo.lock
+src/protos/
