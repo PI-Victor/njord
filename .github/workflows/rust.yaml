@@ -3,11 +3,30 @@ on: [push, pull_request]
 name: Continuous integration
 
 jobs:
+  protoc_setup:
+    name: Protoc setup
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get protoc
+        run: curl -OL  https://github.com/protocolbuffers/protobuf/releases/download/v3.9.2/protoc-3.9.2-linux-x86_64.zip
+      - run: mkdir -p protoc
+      - run: unzip protoc-3.9.2-linux-x86_64.zip -d protoc/
+      - uses: actions/upload-artifact@v1
+        with:
+          name: protoc
+          path: protoc
+      - run: env
+
   check:
-    name: Check
+    name: Cargo check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
+      - uses: actions/download-artifact@v1
+        with:
+          name: protoc
+          path: /tmp/protoc
+      - run: chmod +x /tmp/protoc/bin/protoc
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
@@ -17,12 +36,18 @@ jobs:
         with:
           command: check
           args: --all-features
-
+        env:
+          PATH: /usr/share/rust/.cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin:/home/runner/.dotnet/tools:/home/runner/.config/composer/vendor/bin:/tmp/protoc/bin
   test:
-    name: Test Suite
+    name: Cargo test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
+      - uses: actions/download-artifact@v1
+        with:
+          name: protoc
+          path: /tmp/protoc
+      - run: chmod +x /tmp/protoc/bin/protoc
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
@@ -32,9 +57,10 @@ jobs:
         with:
           command: test
           args: --all-features
-
+        env:
+          PATH: /usr/share/rust/.cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin:/home/runner/.dotnet/tools:/home/runner/.config/composer/vendor/bin:/tmp/protoc/bin
   fmt:
-    name: Rustfmt
+    name: Cargo fmt
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
@@ -44,23 +70,42 @@ jobs:
           toolchain: nightly
           override: true
       - run: rustup component add rustfmt
+      - uses: actions/download-artifact@v1
+        with:
+          name: protoc
+          path: /tmp/protoc
+      - run: chmod +x /tmp/protoc/bin/protoc
       - uses: actions-rs/cargo@v1
         with:
           command: fmt
           args: --all -- --check
+        env:
+          PATH: /usr/share/rust/.cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin:/home/runner/.dotnet/tools:/home/runner/.config/composer/vendor/bin:/tmp/protoc/bin
 
   clippy:
-    name: Clippy
+    name: Cargo clippy
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
+      - uses: actions/download-artifact@v1
+        with:
+          name: protoc
+          path: /tmp/protoc
+      - run: chmod +x /tmp/protoc/bin/protoc
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
           toolchain: stable
           override: true
       - run: rustup component add clippy
+      - uses: actions/download-artifact@v1
+        with:
+          name: protoc
+          path: /tmp/protoc
+      - run: chmod +x /tmp/protoc/bin/protoc
       - uses: actions-rs/cargo@v1
         with:
           command: clippy
           args: --all-features -- -D warnings
+        env:
+          PATH: /usr/share/rust/.cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin:/home/runner/.dotnet/tools:/home/runner/.config/composer/vendor/bin:/tmp/protoc/bin
