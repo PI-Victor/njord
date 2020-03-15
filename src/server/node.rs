@@ -5,24 +5,18 @@
 //  You may obtain a copy of the License at
 //  http://www.apache.org/licenses/LICENSE-2.0
 
+use raft::raw_node::RawNode;
+use raft::storage::MemStorage;
+use raft::Config;
+
 use std::io::Error;
 
 #[derive(Debug)]
-pub struct Node {
-    pub state: State,
-}
-#[derive(Debug)]
-pub enum State {
-    Running,
-    Pending,
-    Failed,
-}
+pub struct Node {}
 
 impl Default for Node {
     fn default() -> Self {
-        Node {
-            state: State::Pending,
-        }
+        Node {}
     }
 }
 
@@ -35,17 +29,6 @@ impl Node {
 #[cfg(test)]
 mod test {
     use super::Node;
-    use super::State;
-
-    #[test]
-    fn test_node_default() {
-        let node = Node::default();
-        let state = match node.state {
-            State::Pending => true,
-            _ => false,
-        };
-        assert_eq!(state, true)
-    }
 
     #[test]
     fn test_node_init() {

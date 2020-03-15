@@ -5,9 +5,8 @@
 //  You may obtain a copy of the License at
 //  http://www.apache.org/licenses/LICENSE-2.0
 
-use std::io::Error;
-
-use super::generic::StorageDriver;
+use raft::prelude::*;
+use raft::storage::{RaftState, Storage};
 
 #[derive(Debug)]
 pub struct LocalStorage<'a> {
@@ -22,35 +21,33 @@ impl<'a> Default for LocalStorage<'a> {
     }
 }
 
-impl<'a> StorageDriver for LocalStorage<'a> {
-    fn flush_data(&self) -> Result<(), Error> {
-        Ok(())
-    }
-    fn init_storage(&self) -> Result<(), Error> {
-        Ok(())
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use super::LocalStorage;
-    use super::StorageDriver;
-
-    #[test]
-    fn test_default_node() {
-        let local_storage = LocalStorage::default();
-        assert_eq!(local_storage.data_path, "/var/njord/data")
+impl<'a> Storage for LocalStorage<'a> {
+    fn initial_state(&self) -> raft::Result<RaftState> {
+        self.initial_state()
     }
 
-    #[test]
-    fn test_flush_data() {
-        let local_storage = LocalStorage::default();
-        local_storage.flush_data().unwrap();
+    fn entries(
+        &self,
+        low: u64,
+        high: u64,
+        max_size: impl Into<Option<u64>>,
+    ) -> raft::Result<Vec<Entry>> {
+        self.entries(low, high, max_size.into().unwrap_or(u64::MAX))
     }
 
-    #[test]
-    fn test_init_storage() {
-        let local_storage = LocalStorage::default();
-        local_storage.init_storage().unwrap();
+    fn term(&self, idx: u64) -> Result<u64, raft::Error> {
+        Ok(1)
+    }
+
+    fn first_index(&self) -> Result<u64, raft::Error> {
+        Ok(1)
+    }
+
+    fn last_index(&self) -> Result<u64, raft::Error> {
+        Ok(1)
+    }
+
+    fn snapshot(&self, request_index: u64) -> Result<Snapshot, raft::Error> {
+        Ok(Snapshot::default())
     }
 }

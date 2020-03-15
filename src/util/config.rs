@@ -26,7 +26,7 @@ impl<'a> Default for Configuration<'a> {
             bind_address: "127.0.0.1".parse::<Ipv4Addr>().unwrap(),
             peers: vec![sample_peer],
             node_name: "default".to_string(),
-            storage: "local",
+            storage: "memory",
         }
     }
 }

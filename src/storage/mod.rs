@@ -6,5 +6,4 @@
 //  http://www.apache.org/licenses/LICENSE-2.0
 
 pub mod core;
-pub mod generic;
 pub mod local;
