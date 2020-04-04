@@ -6,6 +6,3 @@ peers:
   - 10.0.0.51
   - 10.0.0.52
   - 10.0.0.53
-partitions: 4
-replicas: 4
-log_path: "/var/lib/njord/data"

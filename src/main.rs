@@ -1,3 +1,10 @@
+//  Copyright 2020 Palade Ionut-Victor
+//
+//  Licensed under the Apache License, Version 2.0 (the "License");
+//  you may not use this file except in compliance with the License.
+//  You may obtain a copy of the License at
+//  http://www.apache.org/licenses/LICENSE-2.0
+
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
@@ -6,16 +13,16 @@ extern crate clap;
 extern crate log;
 extern crate env_logger;
 extern crate futures;
+extern crate raft;
 extern crate tokio;
-
-use futures::prelude::*;
 
 use std::net::SocketAddrV4;
 use std::str;
 
 use clap::{App, AppSettings, Arg, SubCommand};
-use config::{Config, ConfigError, Environment, File};
 
+mod server;
+mod storage;
 mod util;
 
 use util::config as conf;
@@ -80,10 +87,10 @@ async fn main() -> Result<(), std::io::Error> {
         .filter(Some(module_path!()), log_level)
         .init();
     debug!("Loaded configuration: {:?}", config);
-    let client_sock_addr = format!("{:}:8718", &config.bind_address)
+    let _client_sock_addr = format!("{:}:8718", &config.bind_address)
         .parse::<SocketAddrV4>()
         .unwrap();
-    let node_sock_addr = format!("{:}:8717", &config.bind_address)
+    let _node_sock_addr = format!("{:}:8717", &config.bind_address)
         .parse::<SocketAddrV4>()
         .unwrap();
     info!("Initializing node, waiting for peers...");
